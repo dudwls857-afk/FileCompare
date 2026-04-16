@@ -21,6 +21,7 @@ namespace FileCompare
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     txtLeftDir.Text = dlg.SelectedPath;
+                    PopulateListView(lvwLeftDir, dlg.SelectedPath);
                 }
             }
         }
@@ -39,6 +40,8 @@ namespace FileCompare
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     txtRightDir.Text = dlg.SelectedPath;
+                    PopulateListView(lvwLeftDir, txtLeftDir.Text);
+                    PopulateListView(lvwrightDir, dlg.SelectedPath);
                 }
             }
         }
@@ -63,5 +66,98 @@ namespace FileCompare
         {
 
         }
+        private void PopulateListView(ListView lv, string folderPath)
+        {
+            lv.BeginUpdate();
+            lv.Items.Clear();
+
+            try
+            {
+                // 폴더 추가
+                var dirs = Directory.EnumerateDirectories(folderPath)
+                    .Select(p => new DirectoryInfo(p))
+                    .OrderBy(d => d.Name);
+
+                foreach (var d in dirs)
+                {
+                    var item = new ListViewItem(d.Name);
+                    item.SubItems.Add("<DIR>");
+                    item.SubItems.Add(d.LastWriteTime.ToString("g"));
+                    
+                   
+                    lv.Items.Add(item);
+
+
+
+                }
+
+                // 파일 추가
+                var files = Directory.EnumerateFiles(folderPath)
+                    .Select(p => new FileInfo(p))
+                    .OrderBy(f => f.Name);
+
+                foreach (var f in files)
+                {
+                    var item = new ListViewItem(f.Name);
+                    item.SubItems.Add(f.Length.ToString("N0") + " 바이트");
+                    item.SubItems.Add(f.LastWriteTime.ToString("g"));
+                    FileInfo rf = null;
+
+                    string otherPath = (lv == lvwLeftDir) ? txtRightDir.Text : txtLeftDir.Text;
+
+                    if (Directory.Exists(otherPath))
+                    {
+                        var otherFiles = Directory.GetFiles(otherPath)
+                            .Select(p => new FileInfo(p));
+
+                        foreach (var of in otherFiles)
+                        {
+                            if (of.Name == f.Name)
+                            {
+                                rf = of;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 상태 결정 및 색상 적용 (PDF 그대로)
+                    if (rf != null)
+                    {
+                        if (f.LastWriteTime == rf.LastWriteTime)
+                        {
+                            item.ForeColor = Color.Black;
+                        }
+                        else
+                        {
+                            item.ForeColor = (lv == lvwLeftDir) ? Color.Gray : Color.Red;
+                        }
+                    }
+                    else
+                    {
+                        item.ForeColor = Color.Purple;
+                    }
+
+
+                    lv.Items.Add(item);
+                }
+
+                // 컬럼 자동 크기
+                for (int i = 0; i < lv.Columns.Count; i++)
+                {
+                    lv.AutoResizeColumn(i, ColumnHeaderAutoResizeStyle.ColumnContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("오류: " + ex.Message);
+            }
+            finally
+            {
+                lv.EndUpdate();
+            }
+
+        }
+
     }
+
 }
