@@ -48,13 +48,101 @@ namespace FileCompare
 
         private void btnCopyFromLeft_Click(object sender, EventArgs e)
         {
-           
-               
+            {
+                var selected = lvwLeftDir.SelectedItems;
+
+                foreach (ListViewItem item in selected)
+                {
+                    string name = item.Text;
+
+                    string srcPath = Path.Combine(txtLeftDir.Text, name);
+                    string destPath = Path.Combine(txtRightDir.Text, name);
+
+                    // 파일 없으면 패스
+                    if (!File.Exists(srcPath))
+                        continue;
+
+                    // 🔥 덮어쓰기 확인
+                    if (File.Exists(destPath))
+                    {
+                        DateTime srcTime = File.GetLastWriteTime(srcPath);
+                        DateTime destTime = File.GetLastWriteTime(destPath);
+                        if (srcTime > destTime)
+                        {
+                            // 아무것도 안 하고 바로 진행
+                        }
+                        else
+                        {
+                            DialogResult result = MessageBox.Show(
+                                    $"이미 동일한 이름의 파일이 있습니다.\n\n" +
+                                    $"원본 파일 (Left)\n{srcPath}\n수정일: {srcTime}\n\n" +
+                                    $"대상 파일 (Right)\n{destPath}\n수정일: {destTime}\n\n" +
+                                    $"덮어쓰시겠습니까?",
+                                    "덮어쓰기 확인",
+
+                            MessageBoxButtons.YesNo
+                        );
+
+                            if (result == DialogResult.No)
+                                continue;
+                        }
+
+                        // 🔥 복사
+                        File.Copy(srcPath, destPath, true);
+                    }
+
+                    // 🔥 갱신 (중요)
+                    PopulateListView(lvwLeftDir, txtLeftDir.Text);
+                    PopulateListView(lvwrightDir, txtRightDir.Text);
+                }
+
+            }
         }
 
         private void btnCopyFromRight_Click(object sender, EventArgs e)
         {
+            var selected = lvwrightDir.SelectedItems;
 
+            foreach (ListViewItem item in selected)
+            {
+                string name = item.Text;
+
+                string srcPath = Path.Combine(txtRightDir.Text, name);
+                string destPath = Path.Combine(txtLeftDir.Text, name);
+
+                if (!File.Exists(srcPath))
+                    continue;
+
+                if (File.Exists(destPath))
+                {
+                    DateTime srcTime = File.GetLastWriteTime(srcPath);
+                    DateTime destTime = File.GetLastWriteTime(destPath);
+                    if (srcTime > destTime)
+                    {
+                        // 아무것도 안 하고 바로 진행
+                    }
+                    else
+                    {
+
+                        DialogResult result = MessageBox.Show(
+                    $"이미 동일한 이름의 파일이 있습니다.\n\n" +
+                    $"원본 파일 (Right)\n{srcPath}\n수정일: {srcTime}\n\n" +
+                    $"대상 파일 (Left)\n{destPath}\n수정일: {destTime}\n\n" +
+                    $"덮어쓰시겠습니까?",
+                    "덮어쓰기 확인",
+                        MessageBoxButtons.YesNo
+                    );
+
+                        if (result == DialogResult.No)
+                            continue;
+                    }
+
+                    File.Copy(srcPath, destPath, true);
+                }
+
+                PopulateListView(lvwLeftDir, txtLeftDir.Text);
+                PopulateListView(lvwrightDir, txtRightDir.Text);
+            }
         }
 
         private void lvwLeftDir_SelectedIndexChanged(object sender, EventArgs e)
